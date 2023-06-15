@@ -1,5 +1,5 @@
 [package]
-name = "AggregationSpotter"
+name = "aggregation-spotter"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
@@ -18,3 +18,4 @@ default = []
 [dependencies]
 anchor-lang = "0.28.0"
 solana-program = "1.16.0"
+test-linker = { path = "../TestLinker", features = ["cpi"] }
