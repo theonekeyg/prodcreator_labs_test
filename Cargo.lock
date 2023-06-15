@@ -3,11 +3,12 @@
 version = 3
 
 [[package]]
-name = "AggregationSpotter"
+name = "aggregation-spotter"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "solana-program",
+ "test-linker",
 ]
 
 [[package]]
@@ -1454,6 +1455,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "test-linker"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "solana-program",
 ]
 
 [[package]]
