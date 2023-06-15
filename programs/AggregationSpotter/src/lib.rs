@@ -1,3 +1,4 @@
+use std::mem;
 use anchor_lang::{
     prelude::*,
     solana_program,
@@ -24,8 +25,9 @@ pub mod aggregation_spotter {
         ctx.accounts.spotter.is_initialized = true;
         ctx.accounts.spotter.admin = init_addr[0];
         ctx.accounts.spotter.executor = init_addr[1];
-        ctx.accounts.spotter.rate_decimals = 8;
+        ctx.accounts.spotter.rate_decimals = 4;
         ctx.accounts.spotter.number_of_keepers = 0;
+        ctx.accounts.spotter.consensus_target_rate = 6500; // 65 %
 
         Ok(())
     }
@@ -114,14 +116,22 @@ pub mod aggregation_spotter {
 
     pub fn create_operation(
         ctx: Context<CreateOperation>,
-        operation_data: OperationData
+        operation_data: OperationData,
+        gas_price: u64
     ) -> Result<()> {
+
+        check_keeper(&ctx.accounts.keeper_pda)?;
+
+        let keeper_proof = KeeperProof {
+            keeper: *ctx.accounts.keeper_acc.key,
+            gas_price: gas_price,
+        };
 
         let proof_info = ProofInfo {
             is_approved: false,
             is_executed: false,
-            proofs_count: 0,
-            proofed_keepers: [None; 10],
+            proofs_count: 1,
+            proofed_keepers: vec![Some(keeper_proof)],
         };
 
         let operation = Operation {
@@ -188,6 +198,14 @@ pub mod aggregation_spotter {
         ctx: Context<ExecuteOperation>,
     ) -> Result<()> {
 
+        if ctx.accounts.operation_pda.proof_info.is_executed {
+            return Err(SpotterError::OperationAlreadyExecuted.into());
+        }
+
+        if !ctx.accounts.operation_pda.proof_info.is_approved {
+            return Err(SpotterError::OperationIsNotApproved.into());
+        }
+
         let cpi_ctx = ctx.accounts.get_cpi_ctx(
             ctx.accounts.test_program.to_account_info(),
             ctx.accounts.executer.to_account_info()
@@ -206,16 +224,18 @@ pub fn check_keeper(keeper: &Keeper) -> Result<()> {
         return Ok(());
     }
 
-    Err(SpotterError::Unauthorized.into())
+    Err(SpotterError::KeeperNotAllowed.into())
 }
 
 #[error_code]
 pub enum SpotterError {
-    Unauthorized,
+    KeeperNotAllowed,
     KeeperAlreadyEnabled,
     WrongKeeperAccount,
     WrongContractAccount,
     OperationAlreadyApproved,
+    OperationAlreadyExecuted,
+    OperationIsNotApproved,
     KeeperIsAlreadyApproved,
 }
 
@@ -249,21 +269,30 @@ impl KeeperProof {
     pub const MAXIMUM_SIZE: usize = 32 + 8;
 }
 
+/// Calculates size of the vector with borsh serialization
+pub fn calculate_vec_allocating_size<T>(max_elements: usize, element_size: usize) -> usize {
+    let metadata_size = mem::size_of::<Vec<T>>();
+
+    metadata_size + (element_size * max_elements)
+}
+
 /// @notice struct for informations that hold knowledge of operation status
 /// @param isApproved indicates operation approved and ready to execute
 /// @param isExecuted indicates operation is executed
 /// @param proofsCount number of proofs by uniq keepers
 /// @param proofedKeepers keepers which made proof of operation
-#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone, Copy)]
+#[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct ProofInfo {
     pub is_approved: bool, // 1
     pub is_executed: bool, // 1
     pub proofs_count: u64, // 8
-    pub proofed_keepers: [Option<KeeperProof>; 10], // 10 * 40
+    pub proofed_keepers: Vec<Option<KeeperProof>>, // (n + 1) * 40
 }
 
 impl ProofInfo {
-    pub const MAXIMUM_SIZE: usize = 1 + 1 + 8 + 10 * KeeperProof::MAXIMUM_SIZE;
+    pub fn maximum_size(num_elements: usize) -> usize {
+        calculate_vec_allocating_size::<KeeperProof>(num_elements, KeeperProof::MAXIMUM_SIZE + 1)
+    }
 }
 
 /// @notice struct for informations that hold knowledge of operation calling proccess
@@ -292,7 +321,11 @@ pub struct Operation {
 }
 
 impl Operation {
-    pub const MAXIMUM_SIZE: usize = DESCRIMINATOR_LEN + ProofInfo::MAXIMUM_SIZE + OperationData::MAXIMUM_SIZE;
+    // pub const MAXIMUM_SIZE: usize = DESCRIMINATOR_LEN + ProofInfo::MAXIMUM_SIZE + OperationData::MAXIMUM_SIZE;
+
+    pub fn maximum_size(num_elements: usize) -> usize {
+        DESCRIMINATOR_LEN + ProofInfo::maximum_size(num_elements) + OperationData::MAXIMUM_SIZE
+    }
 }
 
 #[account]
@@ -303,6 +336,7 @@ pub struct AggregationSpotter {
     pub number_of_keepers: u64,    // 8
     /// 10000 = 100%    
     pub rate_decimals: u8,         // 1
+    /// percentage of proofs div numberOfAllowedKeepers which should be reached to approve operation. Scaled with 10000 decimals, e.g. 6000 is 60%
     pub consensus_target_rate: u64 // 8
 }
 
@@ -400,7 +434,7 @@ pub struct CreateOperation<'info> {
     pub keeper_pda: Account<'info, Keeper>,
     /// CHECK: We need this account only to create the PDA
     pub operation_acc: AccountInfo<'info>,
-    #[account(init, payer = keeper_acc, space = Operation::MAXIMUM_SIZE, seeds=[OPERATION_SEED.as_ref(), operation_acc.key.as_ref()], bump)]
+    #[account(init, payer = keeper_acc, space = Operation::maximum_size(spotter.number_of_keepers as usize), seeds=[OPERATION_SEED.as_ref(), operation_acc.key.as_ref()], bump)]
     pub operation_pda: Account<'info, Operation>,
     pub system_program: Program<'info, System>,
 }
