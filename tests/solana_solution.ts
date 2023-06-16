@@ -36,6 +36,7 @@ async function get_operation_pda(operation: PublicKey, programId: PublicKey) {
 
 interface OperationData {
   contr: PublicKey,
+  accounts: PublicKey[],
 }
 
 describe("solana_solution", async () => {
