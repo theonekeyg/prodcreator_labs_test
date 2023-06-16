@@ -121,4 +121,21 @@ module.exports = async function (provider) {
 
   console.log("Added allowed contract: ", allowedContractAcc.toBase58());
 
+  // Fund keepers some native SOL through solana transfer from current payer
+  // Transfer 5 SOL to each keeper
+  for (let keeper of [keeper1Acc, keeper2Acc, keeper3Acc]) {
+
+    const lamports = 5 * 1000000000;
+
+    const tx = new anchor.web3.Transaction().add(
+      anchor.web3.SystemProgram.transfer({
+        fromPubkey: admin.publicKey,
+        toPubkey: keeper,
+        lamports,
+      })
+    );
+    await provider.sendAndConfirm(tx, [admin]);
+
+    console.log(`[tx: ${tx}] Funded 5 SOL to keeper: ${keeper.toBase58()}`);
+  }
 };
