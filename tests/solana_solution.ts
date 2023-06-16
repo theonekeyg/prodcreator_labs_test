@@ -171,7 +171,7 @@ describe("solana_solution", async () => {
   it("create new operation", async () => {
     let operationData: OperationData = {
       contr: testLinker.programId,
-      contracts: [contract_acc.publicKey, executor.publicKey],
+      accounts: [testLinker.programId, executor.publicKey],
     };
     let gas_price = new anchor.BN(50000);
 

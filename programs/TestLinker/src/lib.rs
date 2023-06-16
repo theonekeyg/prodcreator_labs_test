@@ -1,8 +1,4 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program,
-    solana_program::{pubkey, pubkey::Pubkey},
-};
+use anchor_lang::prelude::*;
 
 declare_id!("FBXArrxAnAZpmGmVYD8jQVauohCrXHaJBgTXzUPKRyHa");
 
@@ -10,7 +6,7 @@ declare_id!("FBXArrxAnAZpmGmVYD8jQVauohCrXHaJBgTXzUPKRyHa");
 pub mod test_linker {
     use super::*;
 
-    pub fn test_link(ctx: Context<TestLink>) -> Result<()> {
+    pub fn test_link(_ctx: Context<TestLink>) -> Result<()> {
         msg!("test_link");
         Ok(())
     }

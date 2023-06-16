@@ -1,14 +1,10 @@
-use std::mem;
 use anchor_lang::{
     prelude::*,
-    solana_program,
     solana_program::{pubkey, pubkey::Pubkey},
 };
+use std::mem;
 
-use test_linker::{
-    program::TestLinker,
-    cpi::accounts::TestLink
-};
+use test_linker::{cpi::accounts::TestLink, program::TestLinker};
 
 declare_id!("3XQdG1Zpk151xuGHSd6DUkNuh9m9i3M8ptxJEHNfZdJ2");
 pub const OWNER: Pubkey = pubkey!("CuK4CzZFFQaK2KaUYYyNodQ6ZG6PTv1jjYKvqHUx7P5Y");
@@ -35,7 +31,6 @@ pub mod aggregation_spotter {
     /// @notice Create and add keeper to whitelist
     /// @param keeper address of keeper to add
     pub fn create_keeper(ctx: Context<CreateKeeper>, keeper: Pubkey) -> Result<()> {
-
         if *ctx.accounts.keeper_acc.key != keeper {
             return Err(SpotterError::WrongKeeperAccount.into());
         }
@@ -50,7 +45,6 @@ pub mod aggregation_spotter {
     /// @notice Reenable keeper in whitelist
     /// @param keeper address of keeper to remove
     pub fn enable_keeper(ctx: Context<RemoveKeeper>, keeper: Pubkey) -> Result<()> {
-
         if *ctx.accounts.keeper_acc.key != keeper {
             return Err(SpotterError::WrongKeeperAccount.into());
         }
@@ -68,7 +62,6 @@ pub mod aggregation_spotter {
     /// @notice Disable keeper from whitelist
     /// @param keeper address of keeper to remove
     pub fn remove_keeper(ctx: Context<RemoveKeeper>, keeper: Pubkey) -> Result<()> {
-
         if *ctx.accounts.keeper_acc.key != keeper {
             return Err(SpotterError::WrongKeeperAccount.into());
         }
@@ -82,7 +75,6 @@ pub mod aggregation_spotter {
     /// @notice Adding contract to whitelist
     /// @param _contract address of contract to add
     pub fn add_allowed_contract(ctx: Context<AddAllowedContract>, contract: Pubkey) -> Result<()> {
-
         if *ctx.accounts.contract_acc.key != contract {
             return Err(SpotterError::WrongContractAccount.into());
         }
@@ -95,8 +87,10 @@ pub mod aggregation_spotter {
 
     /// @notice Removing contract from whitelist
     /// @param _contract address of contract to remove
-    pub fn remove_allowed_contract(ctx: Context<RemoveAllowedContract>, contract: Pubkey) -> Result<()> {
-
+    pub fn remove_allowed_contract(
+        ctx: Context<RemoveAllowedContract>,
+        contract: Pubkey,
+    ) -> Result<()> {
         if *ctx.accounts.contract_acc.key != contract {
             return Err(SpotterError::WrongContractAccount.into());
         }
@@ -108,7 +102,10 @@ pub mod aggregation_spotter {
 
     /// @notice Setting of target rate
     /// @param rate target rate
-    pub fn set_consensus_target_rate(ctx: Context<SetConsensusTargetRate>, rate: u64) -> Result<()> {
+    pub fn set_consensus_target_rate(
+        ctx: Context<SetConsensusTargetRate>,
+        rate: u64,
+    ) -> Result<()> {
         ctx.accounts.spotter.consensus_target_rate = rate;
 
         Ok(())
@@ -117,9 +114,8 @@ pub mod aggregation_spotter {
     pub fn create_operation(
         ctx: Context<CreateOperation>,
         operation_data: OperationData,
-        gas_price: u64
+        gas_price: u64,
     ) -> Result<()> {
-
         check_keeper(&ctx.accounts.keeper_pda)?;
 
         let keeper_proof = KeeperProof {
@@ -141,15 +137,16 @@ pub mod aggregation_spotter {
 
         *ctx.accounts.operation_pda = operation;
 
-        msg!("NewOperation({})", ctx.accounts.operation_pda.operation_data.contr);
+        msg!(
+            "NewOperation({}; [{:?}])",
+            ctx.accounts.operation_pda.key(),
+            ctx.accounts.operation_pda.operation_data.accounts
+        );
 
         Ok(())
     }
 
-    pub fn propose_operation(
-        ctx: Context<ProposeOperation>,
-        gas_price: u64,
-    ) -> Result<()> {
+    pub fn propose_operation(ctx: Context<ProposeOperation>, gas_price: u64) -> Result<()> {
         if ctx.accounts.operation_pda.proof_info.is_approved {
             return Err(SpotterError::OperationAlreadyApproved.into());
         }
@@ -171,14 +168,16 @@ pub mod aggregation_spotter {
         // Add new proof
         let keeper_proof = KeeperProof {
             keeper: *ctx.accounts.keeper_acc.key,
-            gas_price: gas_price
+            gas_price: gas_price,
         };
 
         let keeper_idx = ctx.accounts.operation_pda.proof_info.proofs_count as usize;
 
-        let proof_info = &mut ctx.accounts.operation_pda.proof_info;
-
-        ctx.accounts.operation_pda.proof_info.proofed_keepers.insert(keeper_idx, Some(keeper_proof));
+        ctx.accounts
+            .operation_pda
+            .proof_info
+            .proofed_keepers
+            .insert(keeper_idx, Some(keeper_proof));
         ctx.accounts.operation_pda.proof_info.proofs_count += 1;
 
         // Check if enough votes were submitted to approve operation.
@@ -186,8 +185,8 @@ pub mod aggregation_spotter {
         let rate_decimals = ctx.accounts.spotter.rate_decimals;
         let num_allowed_keepers = ctx.accounts.spotter.number_of_keepers;
 
-        if ctx.accounts.operation_pda.proof_info.proofs_count
-            * (rate_decimals as u64) / num_allowed_keepers
+        if ctx.accounts.operation_pda.proof_info.proofs_count * (rate_decimals as u64)
+            / num_allowed_keepers
             >= ctx.accounts.spotter.consensus_target_rate
         {
             ctx.accounts.operation_pda.proof_info.is_approved = true;
@@ -198,10 +197,7 @@ pub mod aggregation_spotter {
     }
 
     /// @notice execute approved operation
-    pub fn execute_operation(
-        ctx: Context<ExecuteOperation>,
-    ) -> Result<()> {
-
+    pub fn execute_operation(ctx: Context<ExecuteOperation>) -> Result<()> {
         // If operation is already executed, return an error.
         if ctx.accounts.operation_pda.proof_info.is_executed {
             return Err(SpotterError::OperationAlreadyExecuted.into());
@@ -212,6 +208,25 @@ pub mod aggregation_spotter {
             return Err(SpotterError::OperationIsNotApproved.into());
         }
 
+        // Check if accounts array has correct length.
+        if ctx.accounts.operation_pda.operation_data.accounts.len() != 2 {
+            msg!(
+                "IncorrectAccountsLength(expected: {}, actual: {})",
+                2,
+                ctx.accounts.operation_pda.operation_data.accounts.len()
+            );
+            return Err(SpotterError::IncorrectAccountsLength.into());
+        }
+
+        // Check that each provided account corresponds to the correct account in operationData.
+        if ctx.accounts.operation_pda.operation_data.accounts[0] != *ctx.accounts.test_program.key {
+            return Err(SpotterError::WrongContractAccount.into());
+        }
+
+        if ctx.accounts.operation_pda.operation_data.accounts[1] != *ctx.accounts.executer.key {
+            return Err(SpotterError::WrongContractAccount.into());
+        }
+
         // If provided program id account differs from the one stored in operation, return an error.
         if ctx.accounts.operation_pda.operation_data.contr != *ctx.accounts.test_program.key {
             return Err(SpotterError::WrongContractAccount.into());
@@ -219,7 +234,7 @@ pub mod aggregation_spotter {
 
         let cpi_ctx = ctx.accounts.get_cpi_ctx(
             ctx.accounts.test_program.to_account_info(),
-            ctx.accounts.executer.to_account_info()
+            ctx.accounts.executer.to_account_info(),
         );
 
         test_linker::cpi::test_link(cpi_ctx)?;
@@ -228,11 +243,9 @@ pub mod aggregation_spotter {
 
         Ok(())
     }
-
 }
 
 pub fn check_keeper(keeper: &Keeper) -> Result<()> {
-
     if keeper.is_allowed {
         return Ok(());
     }
@@ -250,6 +263,8 @@ pub enum SpotterError {
     OperationAlreadyExecuted,
     OperationIsNotApproved,
     KeeperIsAlreadyApproved,
+    IncorrectAccountsLength,
+    IncorrectAccounts,
 }
 
 #[account]
@@ -304,10 +319,18 @@ pub struct ProofInfo {
 }
 
 impl ProofInfo {
-    pub const MAXIMUM_SIZE: usize = 1 + 1 + 8 + calculate_vec_allocating_size::<KeeperProof>(100, KeeperProof::MAXIMUM_SIZE + 1);
+    pub const MAXIMUM_SIZE: usize = 1
+        + 1
+        + 8
+        + calculate_vec_allocating_size::<KeeperProof>(100, KeeperProof::MAXIMUM_SIZE + 1);
 
     pub const fn maximum_size(num_elements: usize) -> usize {
-        1 + 1 + 8 + calculate_vec_allocating_size::<KeeperProof>(num_elements, KeeperProof::MAXIMUM_SIZE + 1)
+        1 + 1
+            + 8
+            + calculate_vec_allocating_size::<KeeperProof>(
+                num_elements,
+                KeeperProof::MAXIMUM_SIZE + 1,
+            )
     }
 }
 
@@ -317,17 +340,18 @@ impl ProofInfo {
 /// @param params parameters for func call
 #[derive(AnchorSerialize, AnchorDeserialize, Debug, Clone)]
 pub struct OperationData {
-    pub contr: Pubkey,         // 32
-    pub contracts: Vec<Pubkey> // (n + 1) * 32
-    // pub functionSelector: ,
-    // pub params: ,
+    pub contr: Pubkey, // 32
+    pub accounts: Vec<Pubkey>, // (n + 1) * 32
+                       // pub functionSelector: ,
+                       // pub params: ,
 }
 
 impl OperationData {
-    pub const MAXIMUM_SIZE: usize = 32 + calculate_vec_allocating_size::<Option<Pubkey>>(100, 32 + 1);
+    pub const MAXIMUM_SIZE: usize =
+        32 + calculate_vec_allocating_size::<Option<Pubkey>>(100, 32 + 1);
 
-    pub const fn maximum_size(num_contracts: usize) -> usize {
-        32 + calculate_vec_allocating_size::<Option<Pubkey>>(num_contracts, 32 + 1)
+    pub const fn maximum_size(num_accounts: usize) -> usize {
+        32 + calculate_vec_allocating_size::<Option<Pubkey>>(num_accounts, 32 + 1)
     }
 }
 
@@ -342,23 +366,26 @@ pub struct Operation {
 }
 
 impl Operation {
-    pub const MAXIMUM_SIZE: usize = DESCRIMINATOR_LEN + ProofInfo::MAXIMUM_SIZE + OperationData::MAXIMUM_SIZE;
+    pub const MAXIMUM_SIZE: usize =
+        DESCRIMINATOR_LEN + ProofInfo::MAXIMUM_SIZE + OperationData::MAXIMUM_SIZE;
 
     pub const fn maximum_size(num_elements: usize, num_accounts: usize) -> usize {
-        DESCRIMINATOR_LEN + ProofInfo::maximum_size(num_elements) + OperationData::maximum_size(num_accounts)
+        DESCRIMINATOR_LEN
+            + ProofInfo::maximum_size(num_elements)
+            + OperationData::maximum_size(num_accounts)
     }
 }
 
 #[account]
 pub struct AggregationSpotter {
-    pub is_initialized: bool,      // 1
-    pub admin: Pubkey,             // 32
-    pub executor: Pubkey,          // 32
-    pub number_of_keepers: u64,    // 8
+    pub is_initialized: bool,   // 1
+    pub admin: Pubkey,          // 32
+    pub executor: Pubkey,       // 32
+    pub number_of_keepers: u64, // 8
     /// 10000 = 100%    
-    pub rate_decimals: u64,        // 8
+    pub rate_decimals: u64, // 8
     /// percentage of proofs div numberOfAllowedKeepers which should be reached to approve operation. Scaled with 10000 decimals, e.g. 6000 is 60%
-    pub consensus_target_rate: u64 // 8
+    pub consensus_target_rate: u64, // 8
 }
 
 impl AggregationSpotter {
@@ -485,12 +512,12 @@ pub struct ExecuteOperation<'info> {
 }
 
 impl<'info> ExecuteOperation<'info> {
-    pub fn get_cpi_ctx(&self, cpi_program: AccountInfo<'info>, executer: AccountInfo<'info>)
-        -> CpiContext<'_, '_, '_, 'info, TestLink<'info>> {
-
-        let cpi_accounts = TestLink {
-            executer: executer
-        };
+    pub fn get_cpi_ctx(
+        &self,
+        cpi_program: AccountInfo<'info>,
+        executer: AccountInfo<'info>,
+    ) -> CpiContext<'_, '_, '_, 'info, TestLink<'info>> {
+        let cpi_accounts = TestLink { executer: executer };
 
         CpiContext::new(cpi_program, cpi_accounts)
     }
