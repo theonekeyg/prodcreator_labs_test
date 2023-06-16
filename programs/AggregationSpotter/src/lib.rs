@@ -406,7 +406,7 @@ pub struct Initialize<'info> {
 pub struct CreateKeeper<'info> {
     #[account(mut, has_one = admin, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
-    #[account(mut, constraint = admin.key() == OWNER)]
+    #[account(mut, constraint = admin.key() == spotter.admin)]
     pub admin: Signer<'info>,
     #[account(init, payer = admin, space = Keeper::MAXIMUM_SIZE, seeds=[KEEPER_SEED.as_ref(), keeper_acc.key.as_ref()], bump)]
     pub keeper_pda: Account<'info, Keeper>,
@@ -419,7 +419,7 @@ pub struct CreateKeeper<'info> {
 pub struct EnableKeeper<'info> {
     #[account(mut, has_one = admin, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
-    #[account(constraint = admin.key() == OWNER)]
+    #[account(constraint = admin.key() == spotter.admin)]
     pub admin: Signer<'info>,
     #[account(mut, seeds=[KEEPER_SEED.as_ref(), keeper_acc.key.as_ref()], bump)]
     pub keeper_pda: Account<'info, Keeper>,
@@ -432,7 +432,7 @@ pub struct EnableKeeper<'info> {
 pub struct RemoveKeeper<'info> {
     #[account(mut, has_one = admin, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
-    #[account(constraint = admin.key() == OWNER)]
+    #[account(constraint = admin.key() == spotter.admin)]
     pub admin: Signer<'info>,
     #[account(mut, seeds=[KEEPER_SEED.as_ref(), keeper_acc.key.as_ref()], bump)]
     pub keeper_pda: Account<'info, Keeper>,
@@ -444,7 +444,7 @@ pub struct RemoveKeeper<'info> {
 pub struct AddAllowedContract<'info> {
     #[account(mut, has_one = admin, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
-    #[account(mut, constraint = admin.key() == OWNER)]
+    #[account(mut, constraint = admin.key() == spotter.admin)]
     pub admin: Signer<'info>,
     #[account(init, payer = admin, space = AllowedContract::MAXIMUM_SIZE, seeds=[CONTRACT_SEED.as_ref(), contract_acc.key.as_ref()], bump)]
     pub contract_pda: Account<'info, AllowedContract>,
@@ -457,7 +457,7 @@ pub struct AddAllowedContract<'info> {
 pub struct RemoveAllowedContract<'info> {
     #[account(mut, has_one = admin, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
-    #[account(constraint = admin.key() == OWNER)]
+    #[account(constraint = admin.key() == spotter.admin)]
     pub admin: Signer<'info>,
     #[account(mut, seeds=[CONTRACT_SEED.as_ref(), contract_acc.key.as_ref()], bump)]
     pub contract_pda: Account<'info, AllowedContract>,
@@ -469,7 +469,7 @@ pub struct RemoveAllowedContract<'info> {
 pub struct SetConsensusTargetRate<'info> {
     #[account(mut, has_one = admin, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
-    #[account(constraint = admin.key() == OWNER)]
+    #[account(constraint = admin.key() == spotter.admin)]
     pub admin: Signer<'info>,
 }
 
