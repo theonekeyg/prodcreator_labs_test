@@ -3,6 +3,7 @@ import { Program } from "@coral-xyz/anchor";
 import { expect } from "chai";
 import { AggregationSpotter, TestLinker } from "../target/types/solana_solution";
 
+const SPOTTER_SEED = "spotter";
 const KEEPER_SEED = "keeper";
 const CONTRACT_SEED = "contract";
 const OPERATION_SEED = "operation";
@@ -34,6 +35,14 @@ async function get_operation_pda(operation: PublicKey, programId: PublicKey) {
   return [operation_rv, bump]
 }
 
+async function get_spotter_pda(programId: PublicKey) {
+  const [spotter_rv, bump] = await anchor.web3.PublicKey.findProgramAddress([
+    anchor.utils.bytes.utf8.encode(SPOTTER_SEED),
+  ],
+  programId);
+  return [spotter_rv, bump]
+}
+
 interface OperationData {
   contr: PublicKey,
   accounts: PublicKey[],
@@ -53,7 +62,8 @@ describe("solana_solution", async () => {
 
   const admin = program.provider.wallet.payer;
   const executor = anchor.web3.Keypair.generate();
-  const spotter = anchor.web3.Keypair.generate();
+  // const spotter = anchor.web3.Keypair.generate();
+  const [spotter, bump] = await get_spotter_pda(program.programId);
 
   const keeper1_acc = anchor.web3.Keypair.generate();
   const keeper2_acc = anchor.web3.Keypair.generate();
@@ -74,14 +84,14 @@ describe("solana_solution", async () => {
     await program.methods
       .initialize([admin.publicKey, executor.publicKey])
       .accounts({
-        spotter: spotter.publicKey,
+        spotter: spotter,
         admin: admin.publicKey,
       })
-      .signers([spotter])
+      .signers([])
       .rpc();
 
     // Fetch current spotter state
-    let spotterState = await program.account.aggregationSpotter.fetch(spotter.publicKey);
+    let spotterState = await program.account.aggregationSpotter.fetch(spotter);
     expect(spotterState.isInitialized).to.eql(true);
     expect(spotterState.admin).to.eql(admin.publicKey);
     expect(spotterState.executor).to.eql(executor.publicKey);
@@ -92,7 +102,7 @@ describe("solana_solution", async () => {
     await program.methods
       .createKeeper(keeper1_acc.publicKey)
       .accounts({
-        spotter: spotter.publicKey,
+        spotter: spotter,
         admin: admin.publicKey,
         keeperPda: keeper1,
         keeperAcc: keeper1_acc.publicKey,
@@ -101,7 +111,7 @@ describe("solana_solution", async () => {
       .rpc();
 
     let keeperState = await program.account.keeper.fetch(keeper1);
-    let spotterState = await program.account.aggregationSpotter.fetch(spotter.publicKey);
+    let spotterState = await program.account.aggregationSpotter.fetch(spotter);
     expect(keeperState.isAllowed).to.eql(true);
     expect(keeperState.key).to.eql(keeper1_acc.publicKey);
     // expect(spotterState.numberOfKeepers).to.eql(new anchor.BN(1));
@@ -111,7 +121,7 @@ describe("solana_solution", async () => {
     await program.methods
       .removeKeeper(keeper1_acc.publicKey)
       .accounts({
-        spotter: spotter.publicKey,
+        spotter: spotter,
         admin: admin.publicKey,
         keeperPda: keeper1,
         keeperAcc: keeper1_acc.publicKey,
@@ -125,7 +135,7 @@ describe("solana_solution", async () => {
     await program.methods
       .enableKeeper(keeper1_acc.publicKey)
       .accounts({
-        spotter: spotter.publicKey,
+        spotter: spotter,
         admin: admin.publicKey,
         keeperPda: keeper1,
         keeperAcc: keeper1_acc.publicKey,
@@ -143,7 +153,7 @@ describe("solana_solution", async () => {
       await program.methods
       .createKeeper(keeper_acc.publicKey)
       .accounts({
-        spotter: spotter.publicKey,
+        spotter: spotter,
         admin: admin.publicKey,
         keeperPda: keeper,
         keeperAcc: keeper_acc.publicKey,
@@ -157,7 +167,7 @@ describe("solana_solution", async () => {
     await program.methods
       .addAllowedContract(contract_acc.publicKey)
       .accounts({
-        spotter: spotter.publicKey,
+        spotter: spotter,
         admin: admin.publicKey,
         contractPda: contract,
         contractAcc: contract_acc.publicKey,
@@ -186,7 +196,7 @@ describe("solana_solution", async () => {
     await program.methods
       .createOperation(operationData, gas_price)
       .accounts({
-        spotter: spotter.publicKey,
+        spotter: spotter,
         keeperAcc: keeper1_acc.publicKey,
         keeperPda: keeper1,
         operationAcc: operation_acc.publicKey,
@@ -210,7 +220,7 @@ describe("solana_solution", async () => {
     await program.methods
       .proposeOperation(gas_price)
       .accounts({
-        spotter: spotter.publicKey,
+        spotter: spotter,
         keeperAcc: keeper2_acc.publicKey,
         keeperPda: keeper2,
         operationAcc: operation_acc.publicKey,

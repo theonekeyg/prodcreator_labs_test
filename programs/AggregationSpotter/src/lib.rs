@@ -8,6 +8,7 @@ use test_linker::{cpi::accounts::TestLink, program::TestLinker};
 
 declare_id!("3XQdG1Zpk151xuGHSd6DUkNuh9m9i3M8ptxJEHNfZdJ2");
 pub const OWNER: Pubkey = pubkey!("CuK4CzZFFQaK2KaUYYyNodQ6ZG6PTv1jjYKvqHUx7P5Y");
+pub const SPOTTER_SEED: &str = "spotter";
 pub const KEEPER_SEED: &str = "keeper";
 pub const CONTRACT_SEED: &str = "contract";
 pub const OPERATION_SEED: &str = "operation";
@@ -394,7 +395,7 @@ impl AggregationSpotter {
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
-    #[account(init, payer = admin, space = AggregationSpotter::MAXIMUM_SIZE)]
+    #[account(init, payer = admin, space = AggregationSpotter::MAXIMUM_SIZE, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
     #[account(mut, constraint = admin.key() == OWNER)]
     pub admin: Signer<'info>,
@@ -403,7 +404,7 @@ pub struct Initialize<'info> {
 
 #[derive(Accounts)]
 pub struct CreateKeeper<'info> {
-    #[account(mut, has_one = admin)]
+    #[account(mut, has_one = admin, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
     #[account(mut, constraint = admin.key() == OWNER)]
     pub admin: Signer<'info>,
@@ -416,7 +417,7 @@ pub struct CreateKeeper<'info> {
 
 #[derive(Accounts)]
 pub struct EnableKeeper<'info> {
-    #[account(mut, has_one = admin)]
+    #[account(mut, has_one = admin, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
     #[account(constraint = admin.key() == OWNER)]
     pub admin: Signer<'info>,
@@ -429,7 +430,7 @@ pub struct EnableKeeper<'info> {
 
 #[derive(Accounts)]
 pub struct RemoveKeeper<'info> {
-    #[account(mut, has_one = admin)]
+    #[account(mut, has_one = admin, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
     #[account(constraint = admin.key() == OWNER)]
     pub admin: Signer<'info>,
@@ -441,7 +442,7 @@ pub struct RemoveKeeper<'info> {
 
 #[derive(Accounts)]
 pub struct AddAllowedContract<'info> {
-    #[account(mut, has_one = admin)]
+    #[account(mut, has_one = admin, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
     #[account(mut, constraint = admin.key() == OWNER)]
     pub admin: Signer<'info>,
@@ -454,7 +455,7 @@ pub struct AddAllowedContract<'info> {
 
 #[derive(Accounts)]
 pub struct RemoveAllowedContract<'info> {
-    #[account(mut, has_one = admin)]
+    #[account(mut, has_one = admin, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
     #[account(constraint = admin.key() == OWNER)]
     pub admin: Signer<'info>,
@@ -466,7 +467,7 @@ pub struct RemoveAllowedContract<'info> {
 
 #[derive(Accounts)]
 pub struct SetConsensusTargetRate<'info> {
-    #[account(mut, has_one = admin)]
+    #[account(mut, has_one = admin, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
     #[account(constraint = admin.key() == OWNER)]
     pub admin: Signer<'info>,
@@ -474,6 +475,7 @@ pub struct SetConsensusTargetRate<'info> {
 
 #[derive(Accounts)]
 pub struct CreateOperation<'info> {
+    #[account(seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
     #[account(mut)]
     pub keeper_acc: Signer<'info>,
@@ -488,6 +490,7 @@ pub struct CreateOperation<'info> {
 
 #[derive(Accounts)]
 pub struct ProposeOperation<'info> {
+    #[account(seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
     #[account(mut)]
     pub keeper_acc: Signer<'info>,
