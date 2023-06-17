@@ -5,12 +5,13 @@
 * `go_aggspotter` - Golang CLI с байднингами для контракта для запуска демо-скрипта
 
 # Demo
-Что-бы запустить демо, нужно иметь иметь локально установленную:
 
-* [солану](https://docs.solana.com/cli/install-solana-cli-tools),
-* [anchor](https://www.anchor-lang.com/docs/installation),
-* [golang](https://go.dev/).
-* [nodejs/nmp](https://nodejs.org/en)
+Для демо нужны будут следующие зависимости:
+
+* [Solana](https://docs.solana.com/cli/install-solana-cli-tools)
+* [Anchor](https://www.anchor-lang.com/docs/installation)
+* [Golang](https://go.dev/)
+* [Nodejs/NPM](https://nodejs.org/en)
 
 ## Step 1. Modify and Build contracts
 
