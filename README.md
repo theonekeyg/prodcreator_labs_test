@@ -1,3 +1,23 @@
+# Description
+Монорепа состоит из 3 компонентов:
+* `aggspotter_keys` - Ключи для демо
+* `solana_solution` - Сабрепа для контрактов
+* `go_aggspotter` - Golang CLI с байднингами для контракта для запуска демо-скрипта
+
+# Demo
+Что-бы запустить демо, нужно иметь иметь локально установленную (солану)[https://docs.solana.com/cli/install-solana-cli-tools],
+(anchor)[https://www.anchor-lang.com/docs/installation], (golang)[https://go.dev/].
+
+## Step 1. Modify and Build contracts
+
+Для начала нужно изменить `OWNER_GUARD`
+
+Билд и тест контрактов
+
+`$ cd solana_solution && anchor build && anchor test`
+
+## Step 2. 
+`$ `
 
 Задача:
 Для блокчейна Solana на языке Rust переписать контракт AggregationSpotter.

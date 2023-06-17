@@ -7,7 +7,7 @@ use std::mem;
 use test_linker::{cpi::accounts::TestLink, program::TestLinker};
 
 declare_id!("3XQdG1Zpk151xuGHSd6DUkNuh9m9i3M8ptxJEHNfZdJ2");
-pub const OWNER: Pubkey = pubkey!("CuK4CzZFFQaK2KaUYYyNodQ6ZG6PTv1jjYKvqHUx7P5Y");
+pub const OWNER_GUARD: Pubkey = pubkey!("CuK4CzZFFQaK2KaUYYyNodQ6ZG6PTv1jjYKvqHUx7P5Y");
 pub const SPOTTER_SEED: &str = "spotter";
 pub const KEEPER_SEED: &str = "keeper";
 pub const CONTRACT_SEED: &str = "contract";
@@ -397,7 +397,7 @@ impl AggregationSpotter {
 pub struct Initialize<'info> {
     #[account(init, payer = admin, space = AggregationSpotter::MAXIMUM_SIZE, seeds=[SPOTTER_SEED.as_ref()], bump)]
     pub spotter: Account<'info, AggregationSpotter>,
-    #[account(mut, constraint = admin.key() == OWNER)]
+    #[account(mut, constraint = admin.key() == OWNER_GUARD)]
     pub admin: Signer<'info>,
     pub system_program: Program<'info, System>,
 }

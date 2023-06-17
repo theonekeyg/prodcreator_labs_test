@@ -8,8 +8,8 @@ solana_solution = "3XQdG1Zpk151xuGHSd6DUkNuh9m9i3M8ptxJEHNfZdJ2"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
-# cluster = "http://127.0.0.1:8899"
+# cluster = "Localnet"
+cluster = "http://127.0.0.1:8899"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
