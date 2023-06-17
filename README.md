@@ -6,9 +6,9 @@
 
 # Demo
 Что-бы запустить демо, нужно иметь иметь локально установленную
-(солану)[https://docs.solana.com/cli/install-solana-cli-tools],
-(anchor)[`https://www.anchor-lang.com/docs/installation`],
-(golang)[`https://go.dev/`].
+[солану](https://docs.solana.com/cli/install-solana-cli-tools),
+[anchor](https://www.anchor-lang.com/docs/installation),
+[golang](https://go.dev/).
 
 ## Step 1. Modify and Build contracts
 
