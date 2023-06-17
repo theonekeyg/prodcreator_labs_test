@@ -31,4 +31,7 @@ func Execute() {
 
 func init() {
 	runOperationCmd.Flags().StringP("url", "u", "", "RPC endpoint to solana node")
+
+	runOperationCmd.Flags().String("keypair", os.Getenv("HOME") + "/.config/solana/id.json", "Operation public key")
+	runOperationCmd.MarkFlagFilename("keypair", "json")
 }

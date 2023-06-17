@@ -6,7 +6,6 @@ package spotter
 
 import (
 	"fmt"
-	"os"
 
 	// log "github.com/sirupsen/logrus"
 	"github.com/gagliardetto/solana-go"
@@ -27,13 +26,11 @@ to quickly create a Cobra application.`,
 		fmt.Println("runOperation called")
 
 		keeperAccsPaths, err := cmd.Flags().GetStringSlice("keeper")
-
 		if err != nil {
 			panic(err)
 		}
 
 		operation, err := cmd.Flags().GetString("operation")
-
 		if err != nil {
 			panic(err)
 		}
@@ -50,7 +47,10 @@ to quickly create a Cobra application.`,
 			}
 		}
 
-		solanaConfigPath := os.Getenv("HOME") + "/.config/solana/id.json";
+		solanaConfigPath, err := cmd.Flags().GetString("keypair");
+		if err != nil {
+			panic(err)
+		}
 
 		client := NewSpotter(solanaConfigPath)
 		client.ExecuteScript(keeperAccs, operationPk)
@@ -63,5 +63,9 @@ func init() {
 	runOperationCmd.Flags().StringSliceP("keeper", "k", []string{}, "List of keepers")
 	runOperationCmd.Flags().SetAnnotation("keeper", cobra.BashCompOneRequiredFlag, []string{"true"})
 	runOperationCmd.MarkFlagRequired("keeper")
+	runOperationCmd.MarkFlagFilename("keeper", "json")
+
 	runOperationCmd.Flags().StringP("operation", "o", "", "Operation public key")
+	// runOperationCmd.Flags().String("keypair", os.Getenv("HOME") + "/.config/solana/id.json", "Operation public key")
+	// runOperationCmd.MarkFlagFilename("keypair", "json")
 }
